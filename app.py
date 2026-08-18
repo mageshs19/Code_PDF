@@ -31,6 +31,11 @@ COMMON_SKIP_DIRS = {
 }
 
 
+COMMON_SKIP_FILES = {
+    "uv.lock",
+}
+
+
 def find_monospace_font():
     possible_paths = [
         r"C:\Windows\Fonts\consola.ttf",
@@ -89,7 +94,12 @@ def read_text_file(file_path: Path):
     return raw_bytes.decode("utf-8", errors="replace"), "utf-8-with-replacement"
 
 
-def collect_files(source_folder: Path, output_folder: Path, include_hidden: bool, skip_common_dirs: bool):
+def collect_files(
+    source_folder: Path,
+    output_folder: Path,
+    include_hidden: bool,
+    skip_common_dirs: bool,
+):
     collected_files = []
 
     for root, dirs, filenames in os.walk(source_folder):
@@ -111,6 +121,9 @@ def collect_files(source_folder: Path, output_folder: Path, include_hidden: bool
 
         for filename in filenames:
             file_path = root_path / filename
+
+            if filename.lower() in COMMON_SKIP_FILES:
+                continue
 
             if not include_hidden and filename.startswith("."):
                 continue
@@ -277,17 +290,8 @@ def create_pdf_from_folder(
     write_line(separator, bold=True)
     write_line("EXPORT SUMMARY", bold=True)
     write_line(separator, bold=True)
-    write_line(f"Source folder: {source_folder}")
-    write_line(f"Total files found: {len(files)}")
+    write_line(f"Project folder: {source_folder.name}")
     write_line(f"Text/code files processed: {processed_files}")
-    write_line(f"Files skipped: {len(skipped_files)}")
-
-    if skipped_files:
-        write_line("")
-        write_line("SKIPPED FILES", bold=True)
-
-        for skipped_file, reason in skipped_files:
-            write_wrapped_line(f"{skipped_file} - {reason}")
 
     write_footer()
     pdf.save()
@@ -365,19 +369,11 @@ def main():
 
             st.success("PDF created successfully.")
 
-            st.write("Output PDF path:")
-            st.code(str(output_pdf_path), language="text")
+            st.write("Output PDF file:")
+            st.code(output_pdf_path.name, language="text")
 
             st.write("Files processed:")
             st.write(processed_files)
-
-            st.write("Files skipped:")
-            st.write(len(skipped_files))
-
-            if skipped_files:
-                with st.expander("View skipped files"):
-                    for skipped_file, reason in skipped_files:
-                        st.write(f"- `{skipped_file}`: {reason}")
 
         except Exception:
             st.error("Failed to create PDF.")
